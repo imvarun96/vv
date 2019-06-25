@@ -1,0 +1,91 @@
+<?php
+function custom_module_menu() {
+  $items = array();
+  
+  $items['examples/node_table'] = array( //this creates a URL that will call this table at "examples/node_table"
+    'title' => 'Custom Table', //page title
+    'description' => 'A CUSTOM TABLE SHOWS DATA OF ALL NODES',
+    'page callback' => '_custom_db_call', //this is the function that will be called when the page is accessed. use drupal_get_form
+    'access callback' => 'MODULENAME_user_has_role',//it is used to give permission to page visit as per role
+  );
+  
+  $items['node_table/%/delete'] = array(
+	'title' => 'Delete Node',
+	'page callback' => 'delete_the_node',//function call to delete one node at a single time
+	'page arguments' => array(1),//passing the node id of the node to be deleted to function delete_the_node()
+	'access callback' =>'MODULENAME_user_has_role',//it is used to give permission to page visit as per role
+	'delivery callback' => 'myModule_ajax_callback',  // Magic goes here
+	'type' =>  MENU_CALLBACK,
+  );
+  
+  $items['admin/config/content/node_table'] = array(
+    'title' => 'Custom Table',
+    'description' => 'Configuration for node_table module',
+    'page callback' => '_custom_db_call',
+    'access arguments' => array('access administration pages'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+  
+  return $items;
+}
+
+
+// This function checks if the role of the current user is 'site manager' or not
+// If role is 'site manager' then access to page is true, else false
+function MODULENAME_user_has_role() { 
+  global $user;
+  $roles = array('site manager','administrator');
+  foreach ($roles as $role) {
+    if (in_array($role, $user->roles)) {
+      return TRUE;
+    }
+  }
+  return FALSE; 
+}
+
+
+// This function creates the table with required fields as mentioned in header variable of the function
+function _custom_db_call() {	
+  // Adding the external js file named somescript.js
+  drupal_add_js(drupal_get_path('module', 'custom_module') . '/somescript.js');
+
+  $query = db_query('SELECT node.nid,node.title,node.type,users.name,node.created FROM {node} 
+						inner join {users} ON node.uid = users.uid order by created asc;');
+  $rows = array();
+  while ($data = $query->fetchAssoc()) {
+    // Fill the table rows
+	$data['created']=date("Y-m-d H:m:s", $data['created']);
+    $data['operation'] = l(t('Delete '), 'node_table/'.$data['nid'].'/delete', array('attributes' => array('class' => array('delete'))));
+    $data['operation'] .= "|";
+    $data['operation'] .= l(t(' Edit'),  'node/' . $data['nid'] . '/edit');
+    $rows[] = array('data' => $data , 'style' => 'word-break:break-all;' , );
+  }
+  //Number of records shown in per page
+  $per_page = 4;
+  $current_page = pager_default_initialize(count($rows), $per_page);
+  $chunks = array_chunk($rows, $per_page, TRUE);
+  // Prepare table header
+  $header = array('Node ID', 'Title','Type', 'Author', 'Publish on', 'Delete | Edit');
+  // Output of table with the paging
+  $output = theme('table',
+    array(
+      "header" => $header,
+      "rows" => $chunks[$current_page],
+      "attributes" => array(),
+      "sticky" => TRUE,
+      "caption" => "ALL CUSTOM NODES ARE DISPLAYED BELOW",
+      "colgroups" => array(),
+      "empty" => t("No Survey Records has been found")
+    )
+  );
+  //return pager with limited number of records.
+  return $output .= theme('pager', array('quantity', count($rows)));
+  //exit;
+}
+
+function delete_the_node($value){	
+//	echo $value;
+//	die();
+	db_query("DELETE FROM {node} WHERE nid =  $value");
+	print "delete";
+}

@@ -1,0 +1,33 @@
+.parent-box {
+	background-color:#ddd;
+	display:flex;
+}
+.box {
+	//width:25%;
+	height:300px;
+	background-color: orange;
+	margin:10px;
+}
+	
+ .owl-carousel .owl-nav button.owl-prev {
+    background: none;
+    color: inherit;
+    border: none;
+    padding: 0 !important;
+    font: inherit;
+	position:absolute;
+	top:50%;
+	
+}
+ .owl-carousel .owl-nav button.owl-next {
+    background: none;
+    color: inherit;
+    border: none;
+    padding: 0 !important;
+    font: inherit;
+	position:absolute;
+	right:0;
+	top:50%;
+	//width:30px;
+	//height:30px;
+}
